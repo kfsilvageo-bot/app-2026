@@ -1,0 +1,753 @@
+<!doctype html>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#2f5d4e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<title>Carteira Organizada</title>
+<style>
+/* Layout: cabeçalho com nome e mês, faixa de números, seções em cartões, calendário em grade. */
+:root {
+  --bg: #f4efe6;
+  --card: #fffdf8;
+  --card-2: #f0e9dc;
+  --ink: #1f2a26;
+  --soft: #6e6a5e;
+  --line: #e4dccb;
+  --accent: #2f5d4e;
+  --accent-soft: #dcebe4;
+  --danger: #b5432f;
+  --danger-soft: #f7e1db;
+  --field: #fbf8f1;
+  --display: "Bricolage Grotesque", "Arial Black", Impact, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161b19; --card: #1d2421; --card-2: #232c28; --ink: #ece9df; --soft: #9ea59d;
+    --line: #2d3732; --accent: #7fc2a6; --accent-soft: #223a31; --danger: #ff8a73;
+    --danger-soft: #3d2620; --field: #18201d; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161b19; --card: #1d2421; --card-2: #232c28; --ink: #ece9df; --soft: #9ea59d;
+  --line: #2d3732; --accent: #7fc2a6; --accent-soft: #223a31; --danger: #ff8a73;
+  --danger-soft: #3d2620; --field: #18201d; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 580px; margin: 0 auto; padding-block: 18px 60px; display: flex; flex-direction: column; gap: 16px; }
+
+/* Cabeçalho */
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.brand { font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: -0.02em; line-height: 1; margin: 0; }
+.brand small { display: block; font-family: var(--mono); font-weight: 400; font-size: 11px; color: var(--soft); letter-spacing: 0.04em; margin-top: 6px; text-transform: uppercase; }
+.month-nav { display: flex; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
+.month-nav button {
+  font: inherit; font-size: 18px; background: none; color: var(--ink); border: none; width: 40px; height: 40px; border-radius: 999px; cursor: pointer; padding: 0;
+}
+.month-nav button:hover { background: var(--card-2); }
+.month-nav span { font-family: var(--display); font-weight: 700; font-size: 15px; min-width: 130px; text-align: center; text-transform: capitalize; }
+
+/* Números do mês */
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; min-width: 0; }
+.stat .k { font-family: var(--mono); font-size: 11px; color: var(--soft); text-transform: uppercase; letter-spacing: 0.05em; }
+.stat .v { font-family: var(--display); font-weight: 800; font-size: 19px; line-height: 1.15; margin-top: 4px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stat.warn { background: var(--danger-soft); border-color: transparent; }
+.stat.warn .v, .stat.warn .k { color: var(--danger); }
+.stat.good .v { color: var(--accent); }
+.alert { background: var(--danger-soft); color: var(--danger); border-radius: var(--radius); padding: 10px 14px; font-weight: 600; font-size: 14px; }
+
+/* Cartões de seção */
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.panel-head h2 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 17px; }
+.panel-head .hint { font-family: var(--mono); font-size: 11px; color: var(--soft); }
+
+.hdr { font-family: var(--mono); font-size: 10px; color: var(--soft); text-transform: uppercase; letter-spacing: 0.06em; display: grid; grid-template-columns: 30px minmax(0,1fr) 52px minmax(0,104px) 28px; gap: 6px; padding: 0 2px; }
+
+/* Linha de conta */
+.bill { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 10px; background: var(--card-2); }
+.bill.is-paid { background: var(--accent-soft); }
+.bill .main { display: grid; grid-template-columns: 30px minmax(0,1fr) 52px minmax(0,104px) 28px; gap: 6px; align-items: center; }
+.bill.is-paid .name { text-decoration: line-through; color: var(--soft); }
+.bill .sub { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; padding-left: 36px; font-family: var(--mono); font-size: 12px; color: var(--soft); }
+.check {
+  width: 30px; height: 30px; min-height: 30px; border-radius: 50%; padding: 0; cursor: pointer;
+  border: 2px solid var(--soft); background: var(--card); color: var(--card); font-size: 15px; font-weight: 800;
+  display: grid; place-items: center;
+}
+.check[aria-checked="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+input.t {
+  font: inherit; font-family: var(--mono); font-size: 14px; color: var(--ink);
+  background: var(--field); border: 1px solid var(--line); border-radius: 8px;
+  padding: 7px 9px; width: 100%; min-width: 0; min-height: 38px;
+}
+input.t.r { text-align: right; font-variant-numeric: tabular-nums; }
+input.t.c { text-align: center; }
+input.t.name { font-family: var(--body); font-weight: 600; font-size: 15px; }
+input.t.title { font-family: var(--display); font-weight: 700; font-size: 16px; background: transparent; border: 1px dashed transparent; }
+input.t.title:hover, input.t.title:focus { border-color: var(--line); background: var(--field); }
+input.t:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.del { font: inherit; background: none; border: none; color: var(--danger); cursor: pointer; font-size: 20px; min-height: 36px; min-width: 28px; padding: 0; border-radius: 8px; }
+.del:hover { background: var(--danger-soft); }
+
+.sel { font: inherit; font-family: var(--mono); font-size: 12px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; min-height: 36px; }
+.tog { display: flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; }
+.tog input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+input.t.mini { width: 52px; min-width: 52px; min-height: 34px; padding: 5px 4px; text-align: center; }
+
+.btn {
+  font: inherit; font-family: var(--mono); font-size: 13px; font-weight: 600;
+  background: transparent; color: var(--accent); border: 1.5px dashed var(--accent);
+  padding: 8px 14px; cursor: pointer; min-height: 40px; border-radius: 999px; align-self: flex-start;
+}
+.btn:hover { background: var(--accent-soft); }
+.btn.ghost { color: var(--soft); border-color: var(--line); }
+
+/* Calendário */
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal .dow { font-family: var(--mono); font-size: 10px; text-align: center; color: var(--soft); padding-bottom: 2px; text-transform: uppercase; }
+.cal .cell { background: var(--card-2); border-radius: 10px; min-height: 64px; padding: 5px; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.cal .cell.empty { background: transparent; }
+.cal .cell.today { box-shadow: inset 0 0 0 2px var(--ink); }
+.cal .cell.neg { box-shadow: inset 0 0 0 2px var(--danger); }
+.cal .n { font-family: var(--mono); font-size: 11px; font-weight: 700; }
+.cal .due { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--danger); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; margin-top: 2px; }
+.cal .names { font-size: 10px; line-height: 1.2; overflow-wrap: anywhere; color: var(--ink); margin-top: 1px; }
+.cal .names .paid { color: var(--accent); font-weight: 700; display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-family: var(--mono); font-size: 11px; color: var(--soft); margin: 2px 0 0; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+/* Cartões */
+details.drawer { background: var(--card-2); border-radius: 12px; }
+details.drawer > summary {
+  list-style: none; cursor: pointer; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 48px;
+}
+details.drawer > summary::-webkit-details-marker { display: none; }
+details.drawer > summary::after { content: "+"; font-family: var(--mono); font-size: 18px; color: var(--soft); }
+details.drawer[open] > summary::after { content: "−"; }
+details.drawer > summary .head { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+details.drawer > .inner { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.sum { font-family: var(--mono); font-size: 12px; color: var(--soft); white-space: nowrap; }
+.sum .late { color: var(--danger); font-weight: 700; }
+
+.rowline { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,120px) 28px; gap: 6px; align-items: center; }
+.rowline.inc { grid-template-columns: minmax(0,1fr) minmax(0,110px) auto 28px; gap: 8px; }
+.rowline.inc .tog { font-size: 12px; color: var(--soft); white-space: nowrap; }
+.tabs { display: flex; gap: 8px; overflow-x: auto; padding: 2px; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { font: inherit; font-family: var(--mono); font-size: 13px; padding: 8px 14px; min-height: 40px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; white-space: nowrap; }
+.tab.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.more { font: inherit; background: none; border: none; color: var(--soft); cursor: pointer; font-size: 20px; min-height: 36px; min-width: 28px; padding: 0; border-radius: 8px; letter-spacing: 1px; }
+.more[aria-expanded="true"] { background: var(--card); color: var(--ink); }
+.total-line { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--card-2); font-family: var(--mono); font-size: 13px; color: var(--soft); }
+.total-line b { color: var(--ink); font-size: 15px; font-variant-numeric: tabular-nums; }
+
+footer { font-family: var(--mono); font-size: 12px; color: var(--soft); min-height: 1em; text-align: center; }
+@media (max-width: 420px) {
+  .stat .v { font-size: 16px; }
+  .month-nav span { min-width: 110px; font-size: 14px; }
+  .bill .main, .hdr { grid-template-columns: 30px minmax(0,1fr) 46px minmax(0,92px) 26px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<main>
+  <header class="top">
+    <h1 class="brand">Carteira<br>Organizada<small>controle das contas</small></h1>
+    <div class="month-nav" role="group" aria-label="Escolher mês">
+      <button type="button" id="prev" aria-label="Mês anterior">‹</button>
+      <span id="month-label"></span>
+      <button type="button" id="next" aria-label="Próximo mês">›</button>
+    </div>
+  </header>
+
+  <section class="panel" aria-label="Calendário">
+    <div class="panel-head"><h2>Calendário</h2></div>
+    <div class="cal" id="cal"></div>
+    <div class="legend">
+      <span><i style="background:var(--danger)"></i>falta pagar</span>
+      <span><i style="background:var(--accent)"></i>pago</span>
+      <span><i style="background:transparent;box-shadow:inset 0 0 0 2px var(--danger)"></i>saldo negativo</span>
+    </div>
+  </section>
+
+  <section class="stats" id="stats" aria-live="polite"></section>
+  <div id="alert"></div>
+
+  <div class="tabs" id="tabs" role="group" aria-label="Filtrar contas"></div>
+
+  <section class="panel" id="panel-fixed" aria-label="Contas do mês">
+    <div class="panel-head"><h2>Contas do mês</h2><span class="hint">toque no círculo para marcar</span></div>
+    <div class="hdr"><span></span><span>Conta</span><span>Dia</span><span>Valor</span><span></span></div>
+    <div id="fixed" style="display:flex;flex-direction:column;gap:8px"></div>
+    <button class="btn" id="add-fixed" type="button">+ adicionar conta</button>
+  </section>
+
+  <section class="panel" id="panel-cards" aria-label="Cartões">
+    <div class="panel-head"><h2>Cartões</h2><span class="hint">toque no nome para renomear</span></div>
+    <div id="cards" style="display:flex;flex-direction:column;gap:8px"></div>
+    <button class="btn" id="add-card" type="button">+ adicionar cartão</button>
+  </section>
+
+  <section class="panel" aria-label="Rendas do mês">
+    <div class="panel-head"><h2>Rendas do mês</h2></div>
+    <div class="hdr" style="grid-template-columns:minmax(0,1fr) minmax(0,120px) 28px"><span>Nome</span><span>Valor</span><span></span></div>
+    <div id="incomes" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="total-line" id="income-total"></div>
+    <button class="btn" id="add-income" type="button">+ adicionar renda</button>
+  </section>
+
+  <section class="panel" aria-label="Backup">
+    <div class="panel-head"><h2>Backup</h2><span class="hint">guarde em lugar seguro</span></div>
+    <button class="btn" id="copy-backup" type="button">Copiar meus dados</button>
+    <textarea id="restore-box" rows="3" placeholder="Cole aqui o backup para restaurar" style="font:inherit;font-family:var(--mono);font-size:12px;background:var(--field);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%;box-sizing:border-box"></textarea>
+    <button class="btn ghost" id="restore-btn" type="button">Restaurar</button>
+    <p id="backup-msg" style="font-family:var(--mono);font-size:12px;color:var(--soft);margin:0;min-height:1em"></p>
+  </section>
+
+  <footer id="status"></footer>
+</main>
+
+<script>
+var KEY = "saldo-mes-v6";
+var OLD_KEY = "saldo-mes-v5";
+var MONTHS = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+
+var now = new Date();
+var viewY = now.getFullYear(), viewM = now.getMonth();
+
+var data = { cards: [], months: {} };
+var nextId = 1000;
+function newId() { return "i" + (nextId++) + Date.now().toString(36); }
+function mkey(y, m) { return y + "-" + (m + 1); }
+
+function defaultIncomes() {
+  return [
+    { id: newId(), name: "Juros", value: 0, counts: true },
+    { id: newId(), name: "Depósito", value: 0, counts: true },
+    { id: newId(), name: "Renda variável", value: 0, counts: false }
+  ];
+}
+
+function newMonth() {
+  var keys = Object.keys(data.months).sort();
+  var prev = keys.length ? data.months[keys[keys.length - 1]] : null;
+  var bills = [];
+  if (prev) {
+    prev.bills.forEach(function (b) {
+      var inst = null;
+      if (b.inst) {
+        var nc = (b.inst.cur || 1) + 1;
+        if (b.inst.total && nc > b.inst.total) return;
+        inst = { cur: nc, total: b.inst.total };
+      }
+      bills.push({ id: newId(), group: b.group, name: b.name, day: b.day, value: b.group ? 0 : b.value, paid: false, inst: inst });
+    });
+  }
+  return {
+    incomes: prev ? prev.incomes.map(function (i) { return { id: newId(), name: i.name, value: 0, counts: i.counts }; }) : defaultIncomes(),
+    start: "",
+    bills: bills
+  };
+}
+
+function cur() {
+  var k = mkey(viewY, viewM);
+  if (!data.months[k]) data.months[k] = newMonth();
+  return data.months[k];
+}
+
+function load() {
+  try {
+    var s = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (s && s.months) { data = s; return; }
+  } catch (e) {}
+  try {
+    var o = JSON.parse(localStorage.getItem(OLD_KEY) || "null");
+    if (o && o.months) {
+      data.cards = [{ id: "cartaoC", title: "Cartão C" }, { id: "cartaoL", title: "Cartão L" }];
+      Object.keys(o.months).forEach(function (k) {
+        var om = o.months[k];
+        data.months[k] = {
+          incomes: [
+            { id: newId(), name: "Juros", value: om.incomes.juros || 0, counts: true },
+            { id: newId(), name: "Depósito", value: om.incomes.deposito || 0, counts: true },
+            { id: newId(), name: "Renda variável", value: om.incomes.jogo || 0, counts: !!om.includeGame }
+          ],
+          start: om.start || "",
+          bills: om.bills.filter(function (b) { return b.group !== "divida"; }).map(function (b) {
+            return { id: newId(), group: b.group, name: b.name, day: b.day, value: b.value || 0, paid: false };
+          })
+        };
+        om.bills.filter(function (b) { return b.group === "divida"; }).forEach(function (b) {
+          data.months[k].bills.push({ id: newId(), group: null, name: b.name, day: b.day, value: b.value || 0, paid: false });
+        });
+      });
+    }
+  } catch (e) {}
+}
+
+function save() {
+  var st = document.getElementById("status");
+  try {
+    localStorage.setItem(KEY, JSON.stringify(data));
+    st.textContent = "Salvo neste aparelho.";
+  } catch (e) {
+    st.textContent = "Não foi possível salvar neste navegador.";
+  }
+}
+
+function num(v) {
+  var s = String(v == null ? "" : v).trim();
+  var n = parseFloat(s.replace(/\./g, "").replace(",", "."));
+  if (!isFinite(n)) n = parseFloat(s.replace(",", "."));
+  return isFinite(n) ? n : 0;
+}
+function brl(n) { return (n < 0 ? "-R$ " : "R$ ") + Math.abs(n).toFixed(2).replace(".", ","); }
+function short(n) { return String(Math.round(Math.abs(n))).replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
+
+function input(cls, value, placeholder, label, onInput, mode) {
+  var inp = document.createElement("input");
+  inp.type = "text";
+  inp.inputMode = mode || "text";
+  inp.className = cls;
+  inp.value = value == null || value === 0 || value === "" ? "" : String(value).replace(".", ",");
+  inp.placeholder = placeholder;
+  inp.setAttribute("aria-label", label);
+  inp.addEventListener("input", function () { onInput(inp.value); });
+  inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); inp.blur(); } });
+  return inp;
+}
+function delBtn(label, fn) {
+  var del = document.createElement("button");
+  del.type = "button"; del.className = "del"; del.textContent = "×";
+  del.setAttribute("aria-label", label);
+  del.addEventListener("click", fn);
+  return del;
+}
+
+// Conta: check, nome, dia, valor; abaixo, mover e parcelado
+function billLine(m, b) {
+  var wrap = document.createElement("div");
+  wrap.className = "bill" + (b.paid ? " is-paid" : "");
+  wrap.dataset.day = b.day || "";
+
+  var main = document.createElement("div"); main.className = "main";
+  var chk = document.createElement("button");
+  chk.type = "button"; chk.className = "check";
+  chk.setAttribute("role", "checkbox");
+  chk.setAttribute("aria-checked", String(!!b.paid));
+  chk.setAttribute("aria-label", "Pago: " + (b.name || "conta"));
+  chk.textContent = b.paid ? "✓" : "";
+  chk.addEventListener("click", function () { b.paid = !b.paid; buildAll(); refresh(); });
+  main.appendChild(chk);
+  var nm = input("t name", b.name, "descrição", "Nome da conta", function (v) { b.name = v; refresh(); });
+  nm.classList.add("name");
+  main.appendChild(nm);
+  main.appendChild(input("t c", b.day, "dia", "Dia do vencimento", function (v) { b.day = num(v) || null; refresh(); }, "numeric"));
+  main.appendChild(input("t r", b.value, "0,00", "Valor", function (v) { b.value = num(v); refresh(); }, "decimal"));
+  var more = document.createElement("button");
+  more.type = "button"; more.className = "more"; more.textContent = "⋯";
+  more.setAttribute("aria-label", "Mais opções");
+  more.setAttribute("aria-expanded", "false");
+  main.appendChild(more);
+  wrap.appendChild(main);
+
+  var sub = document.createElement("div"); sub.className = "sub";
+  sub.hidden = true;
+  more.addEventListener("click", function () {
+    var open = sub.hidden;
+    sub.hidden = !open;
+    more.setAttribute("aria-expanded", String(open));
+  });
+  var sel = document.createElement("select"); sel.className = "sel";
+  sel.setAttribute("aria-label", "Mover conta para");
+  var ph = document.createElement("option"); ph.value = ""; ph.textContent = "mover para…"; sel.appendChild(ph);
+  if (b.group) { var o1 = document.createElement("option"); o1.value = "__fixed"; o1.textContent = "contas do mês"; sel.appendChild(o1); }
+  data.cards.forEach(function (c) {
+    if (c.id === b.group) return;
+    var o = document.createElement("option"); o.value = c.id; o.textContent = c.title || "cartão sem nome"; sel.appendChild(o);
+  });
+  sel.addEventListener("change", function () {
+    if (!sel.value) return;
+    b.group = sel.value === "__fixed" ? null : sel.value;
+    buildAll(); refresh();
+  });
+  sub.appendChild(sel);
+
+  var lab = document.createElement("label"); lab.className = "tog";
+  var cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!b.inst;
+  lab.appendChild(cb); lab.appendChild(document.createTextNode("parcelado"));
+  sub.appendChild(lab);
+  if (b.inst) {
+    sub.appendChild(input("t c mini", b.inst.cur, "atual", "Parcela atual", function (v) { b.inst.cur = num(v) || 1; refresh(); }, "numeric"));
+    sub.appendChild(document.createTextNode("de"));
+    sub.appendChild(input("t c mini", b.inst.total, "total", "Total de parcelas", function (v) { b.inst.total = num(v) || 1; refresh(); }, "numeric"));
+  }
+  cb.addEventListener("change", function () {
+    b.inst = cb.checked ? { cur: 1, total: 2 } : null;
+    buildAll(); refresh();
+  });
+  sub.appendChild(delBtn("Remover conta", function () { m.bills = m.bills.filter(function (x) { return x !== b; }); buildAll(); refresh(); }));
+  wrap.appendChild(sub);
+  return wrap;
+}
+
+function buildIncomes(m) {
+  var box = document.getElementById("incomes"); box.innerHTML = "";
+  m.incomes.forEach(function (i) {
+    var row = document.createElement("div"); row.className = "rowline inc";
+    row.appendChild(input("t name", i.name, "nome da renda", "Nome da renda", function (v) { i.name = v; refresh(); }));
+    row.appendChild(input("t r", i.value, "0,00", "Valor da renda", function (v) { i.value = num(v); refresh(); }, "decimal"));
+    var opt = document.createElement("label"); opt.className = "tog";
+    var cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!i.counts;
+    cb.addEventListener("change", function () { i.counts = cb.checked; refresh(); });
+    opt.appendChild(cb); opt.appendChild(document.createTextNode("no saldo"));
+    row.appendChild(opt);
+    row.appendChild(delBtn("Remover renda", function () { m.incomes = m.incomes.filter(function (x) { return x !== i; }); buildAll(); refresh(); }));
+    box.appendChild(row);
+  });
+}
+
+function buildFixed(m) {
+  var box = document.getElementById("fixed"); box.innerHTML = "";
+  var fixed = m.bills.filter(function (b) { return !b.group; });
+  // Lista mostra só o que falta pagar; as pagas ficam recolhidas
+  fixed.filter(function (b) { return !b.paid; }).forEach(function (b) { box.appendChild(billLine(m, b)); });
+  var done = fixed.filter(function (b) { return b.paid; });
+  if (done.length) {
+    var d = document.createElement("details"); d.className = "drawer";
+    var s = document.createElement("summary");
+    s.textContent = "ver pagas (" + done.length + ")";
+    s.style.cssText = "font-family:var(--mono);font-size:13px;color:var(--soft);padding:10px 4px;cursor:pointer;list-style:none";
+    d.appendChild(s);
+    var inner = document.createElement("div"); inner.className = "inner";
+    done.forEach(function (b) { inner.appendChild(billLine(m, b)); });
+    d.appendChild(inner);
+    box.appendChild(d);
+  }
+}
+
+// Abas no topo: Todas, Fixas e cada cartão
+var filter = "all";
+function renderTabs() {
+  var box = document.getElementById("tabs"); box.innerHTML = "";
+  var opts = [{ v: "all", t: "Todas" }, { v: "fixed", t: "Fixas" }];
+  data.cards.forEach(function (c) { opts.push({ v: c.id, t: c.title || "Cartão sem nome" }); });
+  // Se o cartão filtrado foi removido, volta para Todas
+  if (!opts.some(function (o) { return o.v === filter; })) filter = "all";
+  opts.forEach(function (o) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "tab" + (filter === o.v ? " on" : "");
+    b.textContent = o.t;
+    b.setAttribute("aria-pressed", String(filter === o.v));
+    b.addEventListener("click", function () { filter = o.v; buildAll(); });
+    box.appendChild(b);
+  });
+}
+
+function buildCards(m) {
+  var box = document.getElementById("cards"); box.innerHTML = "";
+  data.cards.forEach(function (card) {
+    if (filter !== "all" && filter !== card.id) return; // filtro escolhido no topo
+    var d = document.createElement("details"); d.className = "drawer";
+    d.open = filter === card.id;
+    var s = document.createElement("summary");
+    var head = document.createElement("div"); head.className = "head";
+    var titleIn = input("t title", card.title, "nome do cartão", "Nome do cartão", function (v) { card.title = v; save(); });
+    titleIn.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); });
+    head.appendChild(titleIn);
+    var tot = document.createElement("span"); tot.className = "sum"; tot.dataset.sum = card.id;
+    head.appendChild(tot);
+    s.appendChild(head);
+    d.appendChild(s);
+
+    var inner = document.createElement("div"); inner.className = "inner";
+    m.bills.filter(function (b) { return b.group === card.id; }).forEach(function (b) { inner.appendChild(billLine(m, b)); });
+    var row = document.createElement("div"); row.style.display = "flex"; row.style.gap = "8px"; row.style.flexWrap = "wrap";
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "btn"; add.textContent = "+ adicionar compra";
+    add.addEventListener("click", function () {
+      m.bills.push({ id: newId(), group: card.id, name: "", day: null, value: 0, paid: false });
+      buildAll(); refresh();
+    });
+    var rem = document.createElement("button");
+    rem.type = "button"; rem.className = "btn ghost"; rem.textContent = "remover cartão";
+    var armed = false;
+    rem.addEventListener("click", function () {
+      if (!armed) {
+        armed = true;
+        rem.textContent = "toque de novo para remover";
+        rem.style.color = "var(--danger)";
+        rem.style.borderColor = "var(--danger)";
+        return;
+      }
+      data.cards = data.cards.filter(function (c) { return c !== card; });
+      Object.keys(data.months).forEach(function (k) {
+        data.months[k].bills = data.months[k].bills.filter(function (b) { return b.group !== card.id; });
+      });
+      buildAll(); refresh();
+    });
+    row.appendChild(add); row.appendChild(rem);
+    inner.appendChild(row);
+    d.appendChild(inner);
+    box.appendChild(d);
+  });
+}
+
+function buildAll() {
+  var m = cur();
+  document.getElementById("month-label").textContent = MONTHS[viewM] + " " + viewY;
+  renderTabs();
+  // Painéis mostram só o que o filtro pede
+  var isCard = filter !== "all" && filter !== "fixed";
+  document.getElementById("panel-fixed").hidden = isCard;
+  document.getElementById("panel-cards").hidden = filter === "fixed";
+  buildIncomes(m);
+  buildFixed(m);
+  buildCards(m);
+  renderCardTotals(m); // totais dos cartões precisam ser preenchidos a cada reconstrução
+}
+
+function simulate(m) {
+  var days = new Date(viewY, viewM + 1, 0).getDate();
+  var incomes = 0;
+  m.incomes.forEach(function (i) { if (i.counts) incomes += i.value || 0; });
+  var due = {}, names = {}, paidNames = {}, all = {};
+  m.bills.forEach(function (b) {
+    var d = b.day && b.day >= 1 && b.day <= days ? b.day : days;
+    all[d] = (all[d] || 0) + (b.value || 0);
+    if (!b.paid) due[d] = (due[d] || 0) + (b.value || 0);
+    if (b.name) {
+      var target = b.paid ? paidNames : names;
+      (target[d] = target[d] || []).push(b.name);
+    }
+  });
+  var bal = num(m.start) + incomes;
+  var balances = [];
+  for (var d = 1; d <= days; d++) { bal -= all[d] || 0; balances[d] = bal; }
+  return { days: days, due: due, names: names, paidNames: paidNames, balances: balances, incomes: incomes, firstDow: new Date(viewY, viewM, 1).getDay() };
+}
+
+function renderCal(m) {
+  var sim = simulate(m);
+  var cal = document.getElementById("cal"); cal.innerHTML = "";
+  ["D","S","T","Q","Q","S","S"].forEach(function (d) {
+    var h = document.createElement("div"); h.className = "dow"; h.textContent = d; cal.appendChild(h);
+  });
+  for (var i = 0; i < sim.firstDow; i++) { var e = document.createElement("div"); e.className = "cell empty"; cal.appendChild(e); }
+  var t = new Date();
+  var isThisMonth = t.getFullYear() === viewY && t.getMonth() === viewM;
+  for (var d = 1; d <= sim.days; d++) {
+    var c = document.createElement("div"); c.className = "cell";
+    if (isThisMonth && d === t.getDate()) c.classList.add("today");
+    if (sim.balances[d] < 0) c.classList.add("neg");
+    var n = document.createElement("div"); n.className = "n"; n.textContent = d;
+    c.appendChild(n);
+    if (sim.due[d]) {
+      var du = document.createElement("div"); du.className = "due"; du.textContent = "-" + short(sim.due[d]);
+      c.appendChild(du);
+    }
+    if (sim.names[d] || sim.paidNames[d]) {
+      var nm = document.createElement("div"); nm.className = "names";
+      (sim.names[d] || []).forEach(function (x) { nm.appendChild(document.createTextNode(x + " ")); });
+      (sim.paidNames[d] || []).forEach(function (x) {
+        var sp = document.createElement("span"); sp.className = "paid"; sp.textContent = "✓ " + x; nm.appendChild(sp);
+      });
+      c.appendChild(nm);
+    }
+    if (sim.due[d] || sim.names[d] || sim.paidNames[d]) {
+      c.classList.add("has-bills");
+      c.setAttribute("role", "button");
+      c.setAttribute("tabindex", "0");
+      c.setAttribute("aria-label", "Ver contas do dia " + d);
+      (function (day) {
+        c.addEventListener("click", function () { focusDay(day); });
+        c.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); focusDay(day); } });
+      })(d);
+    }
+    cal.appendChild(c);
+  }
+}
+
+// Toque no dia: desce até a primeira conta daquele dia e destaca por um instante
+function focusDay(d) {
+  var el = document.querySelector('.bill[data-day="' + d + '"]');
+  if (!el) return;
+  var det = el.closest("details");
+  if (det) det.open = true; // abre a gaveta do cartão, se for o caso
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.style.outline = "2px solid var(--accent)";
+  el.style.outlineOffset = "2px";
+  setTimeout(function () { el.style.outline = ""; el.style.outlineOffset = ""; }, 1400);
+}
+
+function renderStats(m) {
+  var active = m.bills.filter(function (b) { return (b.value || 0) > 0; });
+  var paid = active.filter(function (b) { return b.paid; });
+  var open = 0, total = 0;
+  active.forEach(function (b) { total += b.value; if (!b.paid) open += b.value; });
+  var sim = simulate(m);
+  var negIdx = sim.balances.findIndex(function (x) { return x < 0; });
+  var box = document.getElementById("stats"); box.innerHTML = "";
+
+  function stat(k, v, cls) {
+    var s = document.createElement("div"); s.className = "stat" + (cls ? " " + cls : "");
+    var kk = document.createElement("div"); kk.className = "k"; kk.textContent = k;
+    var vv = document.createElement("div"); vv.className = "v"; vv.textContent = v;
+    s.appendChild(kk); s.appendChild(vv); box.appendChild(s);
+  }
+  stat("Pagas", paid.length + " de " + active.length, "good");
+  stat("Faltam", brl(open), open > 0 ? "" : "good");
+  // Saldo atual: o que entrou menos o que já foi pago
+  var remaining = num(m.start) + sim.incomes;
+  paid.forEach(function (b) { remaining -= b.value || 0; });
+  stat("Saldo", brl(remaining), remaining < 0 ? "warn" : "");
+
+  var al = document.getElementById("alert"); al.innerHTML = "";
+  if (negIdx >= 0) {
+    var a = document.createElement("div"); a.className = "alert";
+    a.textContent = "Saldo fica negativo a partir do dia " + (negIdx + 1) + ".";
+    al.appendChild(a);
+  }
+}
+
+function renderCardTotals(m) {
+  document.querySelectorAll("[data-sum]").forEach(function (el) {
+    var paid = 0, open = 0;
+    m.bills.forEach(function (b) {
+      if (b.group !== el.dataset.sum) return;
+      if (b.paid) paid += b.value || 0; else open += b.value || 0;
+    });
+    el.innerHTML = "";
+    el.appendChild(document.createTextNode("pago " + brl(paid) + " · "));
+    var f = document.createElement("span"); f.className = open > 0 ? "late" : "";
+    f.textContent = "falta " + brl(open);
+    el.appendChild(f);
+  });
+}
+
+function renderIncomeTotal(m) {
+  var all = 0, counted = 0;
+  m.incomes.forEach(function (i) { all += i.value || 0; if (i.counts) counted += i.value || 0; });
+  var box = document.getElementById("income-total");
+  box.innerHTML = "";
+  var l = document.createElement("span"); l.textContent = "Total das rendas";
+  var v = document.createElement("b"); v.textContent = brl(all);
+  box.appendChild(l); box.appendChild(v);
+  if (counted !== all) {
+    var s = document.createElement("span"); s.style.width = "100%"; s.style.textAlign = "right";
+    s.textContent = "no saldo: " + brl(counted);
+    box.appendChild(s);
+  }
+}
+
+function refresh() {
+  var m = cur();
+  save();
+  renderIncomeTotal(m);
+  renderStats(m);
+  renderCal(m);
+  renderCardTotals(m);
+}
+
+function move(delta) {
+  viewM += delta;
+  if (viewM < 0) { viewM = 11; viewY--; }
+  if (viewM > 11) { viewM = 0; viewY++; }
+  buildAll(); refresh();
+}
+
+// Backup: copia tudo como texto. Restaurar exige dois toques para não apagar por engano.
+function copyBackup() {
+  var txt = JSON.stringify(data);
+  var msg = document.getElementById("backup-msg");
+  var fallback = function () {
+    var box = document.getElementById("restore-box");
+    box.value = txt; box.select();
+    msg.textContent = "Não consegui copiar sozinho. Selecione o texto da caixa e copie.";
+  };
+  try {
+    navigator.clipboard.writeText(txt).then(function () {
+      msg.textContent = "Copiado. Cole num lugar seguro, como o Drive.";
+    }, fallback);
+  } catch (e) { fallback(); }
+}
+var restoreArmed = false;
+function restoreData() {
+  var box = document.getElementById("restore-box");
+  var msg = document.getElementById("backup-msg");
+  var btn = document.getElementById("restore-btn");
+  var parsed = null;
+  try { parsed = JSON.parse(box.value); } catch (e) {}
+  if (!parsed || !parsed.months || !parsed.cards) {
+    msg.textContent = "Esse texto não parece um backup válido.";
+    return;
+  }
+  if (!restoreArmed) {
+    restoreArmed = true;
+    btn.textContent = "Toque de novo para substituir os dados";
+    btn.style.color = "var(--danger)";
+    btn.style.borderColor = "var(--danger)";
+    return;
+  }
+  data = parsed;
+  restoreArmed = false;
+  btn.textContent = "Restaurar";
+  btn.style.color = "";
+  btn.style.borderColor = "";
+  box.value = "";
+  buildAll(); refresh();
+  msg.textContent = "Dados restaurados.";
+}
+
+function init() {
+  load();
+  cur();
+  document.getElementById("add-income").addEventListener("click", function () {
+    cur().incomes.push({ id: newId(), name: "", value: 0, counts: true }); buildAll(); refresh();
+  });
+  document.getElementById("add-fixed").addEventListener("click", function () {
+    cur().bills.push({ id: newId(), group: null, name: "", day: null, value: 0, paid: false }); buildAll(); refresh();
+  });
+  document.getElementById("add-card").addEventListener("click", function () {
+    data.cards.push({ id: newId(), title: "" }); buildAll(); refresh();
+  });
+  document.getElementById("prev").addEventListener("click", function () { move(-1); });
+  document.getElementById("next").addEventListener("click", function () { move(1); });
+  document.getElementById("copy-backup").addEventListener("click", copyBackup);
+  document.getElementById("restore-btn").addEventListener("click", restoreData);
+  document.getElementById("restore-box").addEventListener("input", function () {
+    if (restoreArmed) {
+      restoreArmed = false;
+      var btn = document.getElementById("restore-btn");
+      btn.textContent = "Restaurar"; btn.style.color = ""; btn.style.borderColor = "";
+    }
+  });
+  buildAll();
+  refresh();
+}
+init();
+</script>
+<script>
+if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").catch(function () {}); }
+</script>
+</body>
